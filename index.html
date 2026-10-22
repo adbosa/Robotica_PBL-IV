@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PBL IV – Acompanhamento do Braço Robótico</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mu:#6b7385;--ln:#e1e5ec;--ac:#2f6fed;--todo:#8b95a9;--doing:#e0a100;--blocked:#d64545;--done:#2f9e63;--we:#eef0f4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1d222b;--tx:#e8ebf2;--mu:#9aa3b5;--ln:#2d3440;--ac:#6b9bff;--todo:#7d879b;--doing:#e8b53a;--blocked:#ef6b6b;--done:#4cc088;--we:#232933;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171d;--card:#1d222b;--tx:#e8ebf2;--mu:#9aa3b5;--ln:#2d3440;--ac:#6b9bff;--todo:#7d879b;--doing:#e8b53a;--blocked:#ef6b6b;--done:#4cc088;--we:#232933;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+h1{font-size:20px;margin:0}header{margin-bottom:12px}.mu,small{color:var(--mu)}
+#sync{margin:2px 0 0;font-size:12px;color:var(--mu)}
+nav{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px}
+nav button{border:1px solid var(--ln);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;font:inherit}
+nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.board{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px;overflow-x:auto;margin-bottom:12px}
+.col{background:var(--we);border-radius:12px;padding:10px;min-height:140px}
+.col h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:6px}.col h3 b{margin-left:auto;color:var(--mu);font-weight:500}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--todo)}
+.dot.doing,.bar.doing{background:var(--doing)}.dot.blocked,.bar.blocked{background:var(--blocked)}.dot.done,.bar.done{background:var(--done)}.bar.todo{background:var(--todo)}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:10px;margin-bottom:8px;cursor:grab;display:flex;flex-direction:column;gap:4px}
+.chip{align-self:flex-start;font-size:12px;background:var(--we);border-radius:999px;padding:1px 8px;color:var(--mu)}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font:inherit}
+.btn.ghost{background:transparent;color:var(--tx);border:1px solid var(--ln)}.btn:disabled{opacity:.5}
+.gantt{overflow-x:auto;background:var(--card);border:1px solid var(--ln);border-radius:12px}
+.gw{position:relative}
+.gr{display:flex;height:40px;border-bottom:1px solid var(--ln)}
+.gl{flex:0 0 180px;position:sticky;left:0;z-index:2;background:var(--card);padding:4px 8px;overflow:hidden;font-size:13px;line-height:1.2;cursor:pointer;border-right:1px solid var(--ln);display:flex;flex-direction:column;justify-content:center}
+.gl small{font-size:11px}
+.gt{position:relative;flex:none;background:repeating-linear-gradient(90deg,transparent 0 29px,var(--ln) 29px 30px)}
+.gh{background:none}.gd{position:absolute;top:0;height:100%;text-align:center;font-size:11px;padding-top:4px;color:var(--mu)}.gd.we{background:var(--we)}.gd em{display:block;font-style:normal;font-weight:600}
+.bar{position:absolute;top:9px;height:22px;border-radius:6px;cursor:pointer;opacity:.9}
+.today{position:absolute;top:0;bottom:0;width:2px;background:var(--blocked);z-index:1;pointer-events:none}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--ln);border-radius:12px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--ln);font-size:14px}th{color:var(--mu);font-weight:500}
+td input,td select,dialog input,dialog select,dialog textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:6px}
+td input.n{width:90px}tfoot td,tr.tot td{font-weight:600}
+dialog{border:1px solid var(--ln);border-radius:14px;background:var(--card);color:var(--tx);width:min(440px,92vw);padding:18px}
+dialog label{display:block;margin-bottom:10px;font-size:13px;color:var(--mu)}.row{display:flex;gap:8px}.row>*{flex:1}
+.prog{height:8px;background:var(--we);border-radius:99px;overflow:hidden;margin:6px 0 14px}.prog i{display:block;height:100%;background:var(--done)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
+.box{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:12px}
+@media (max-width:700px){.board{grid-template-columns:repeat(4,80vw)}}
+:root{--bg:#f3f5fb;--ac:#4f6bff;--ac2:#8b5cf6;--ln:#e6e9f2;--we:#eef1f9;--r:18px;--sh:0 1px 2px rgba(20,30,60,.06),0 10px 28px rgba(20,30,60,.08)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f121a;--card:#171b26;--ln:#262c3b;--we:#1c2130;--ac:#7c93ff;--ac2:#a78bfa;--sh:0 1px 2px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--bg:#0f121a;--card:#171b26;--ln:#262c3b;--we:#1c2130;--ac:#7c93ff;--ac2:#a78bfa;--sh:0 1px 2px rgba(0,0,0,.4),0 12px 30px rgba(0,0,0,.35)}
+html{background:radial-gradient(900px 420px at 8% -10%,color-mix(in srgb,var(--ac) 16%,transparent),transparent),radial-gradient(700px 420px at 100% 0,color-mix(in srgb,var(--ac2) 14%,transparent),transparent),var(--bg);background-attachment:fixed;min-height:100%}
+body{background:none;max-width:1240px;margin:0 auto;padding:22px 18px 40px;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+h1{font-size:28px;font-weight:700;letter-spacing:-.03em;background:linear-gradient(90deg,var(--ac),var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent;width:max-content;max-width:100%}
+#sync{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);box-shadow:var(--sh);font-size:12px}
+#sync::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--done)}
+nav{background:var(--card);padding:5px;border-radius:999px;box-shadow:var(--sh);width:max-content;max-width:100%;margin-bottom:20px}
+nav button{border:0;background:transparent;color:var(--mu);font-weight:500;padding:9px 16px;transition:background .2s,color .2s,box-shadow .2s}
+nav button:hover{color:var(--tx)}
+nav button.on{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--ac) 40%,transparent)}
+.col{background:color-mix(in srgb,var(--card) 55%,transparent);border:1px solid var(--ln);border-radius:var(--r);padding:12px;backdrop-filter:blur(8px)}
+.col h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
+.card{border:0;border-left:4px solid var(--todo);border-radius:14px;box-shadow:var(--sh);padding:12px;transition:transform .18s,box-shadow .18s}
+.card:hover{transform:translateY(-3px)}.card:active{cursor:grabbing;transform:scale(.99)}
+.col:nth-child(2) .card{border-left-color:var(--doing)}.col:nth-child(3) .card{border-left-color:var(--blocked)}.col:nth-child(4) .card{border-left-color:var(--done)}
+.chip{background:color-mix(in srgb,var(--ac) 13%,transparent);color:var(--ac);font-weight:500;padding:2px 10px}
+.gantt,table,.box{border:0;border-radius:var(--r);box-shadow:var(--sh)}
+.bar{border-radius:8px;opacity:1;background-image:linear-gradient(180deg,rgba(255,255,255,.28),transparent);box-shadow:0 3px 8px rgba(0,0,0,.18);transition:filter .15s,transform .15s}
+.bar:hover{filter:brightness(1.1);transform:scaleY(1.12)}
+.today{background:linear-gradient(var(--blocked),transparent)}
+.gr{transition:background .15s}.gr:hover .gt{background-color:var(--we)}
+table{border-collapse:separate;border-spacing:0;overflow:hidden}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:12px 10px}td{padding:6px 10px}
+tr:hover td{background:var(--we)}td{transition:background .15s}
+td input,td select{border-color:transparent;background:transparent}td input:hover,td select:hover{background:var(--bg)}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--ac) 55%,transparent);outline-offset:1px}
+input[type=checkbox]{accent-color:var(--ac);width:18px;height:18px}
+.box h2{margin:.25em 0 0;font-size:26px;font-weight:700;letter-spacing:-.03em}
+.btn{background:linear-gradient(135deg,var(--ac),var(--ac2));border-radius:12px;padding:10px 18px;font-weight:600;box-shadow:0 6px 16px color-mix(in srgb,var(--ac) 35%,transparent);transition:transform .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--tx);box-shadow:none;border:1px solid var(--ln);font-weight:500}
+dialog{border:0;border-radius:22px;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:pop .22s ease}
+dialog::backdrop{background:rgba(10,14,25,.45);backdrop-filter:blur(5px)}
+.prog{height:10px}.prog i{background:linear-gradient(90deg,var(--ac),var(--done));transition:width .5s ease}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#app>*{animation:rise .35s ease both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>Braço Robótico · PBL IV</h1><p id="sync"></p></header>
+<nav id="tabs"></nav>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+<script>
+/* ====== CONFIGURAÇÃO (preencha com os dados do seu projeto Supabase) ======
+   Supabase → Project Settings → API: copie "Project URL" e a chave "anon public". */
+const CFG = { url: 'COLE_AQUI_A_URL_DO_SUPABASE', key: 'COLE_AQUI_A_CHAVE_ANON' };
+/* ========================================================================= */
+const $=s=>document.querySelector(s),dlg=$('#dlg');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso=n=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);
+const dn=s=>Math.round(Date.parse(s+'T00:00:00Z')/864e5);
+const uid=()=>Math.random().toString(36).slice(2,9);
+const ST=[['todo','A fazer'],['doing','Em andamento'],['blocked','Bloqueado'],['done','Concluído']];
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const brl=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);
+const fmt=s=>s?s.slice(8)+'/'+s.slice(5,7):'—';
+const KEY='pbl4-tracker';
+let S,tab='kanban',docRef=null,tm;
+
+function seed(){
+ const m=[1,2,3].map(i=>({id:'m'+i,name:'Integrante '+i}));
+ const T=[['Cadastrar equipe no grupo “PBL IV” (AVA)',0,1],['Comprar componentes eletrônicos',1,5],['Definir alimentação (fonte ou bateria)',1,4],
+ ['Receber impressão da faculdade e fotografar',5,6],['Transferência térmica',6,7],['Corrosão com percloreto',7,8],['Furação',8,9],
+ ['Soldagem e limpeza final',9,11],['Montar arquivo de fotos (TDE 2)',11,12],['Receber estrutura em acrílico e montar',10,16],
+ ['Programar servos (1 → 4)',12,18],['Sequência da tarefa de movimentação',16,22],['Roteiro e gravação do vídeo',22,26],['Entrega: .ino + link do YouTube',26,27]]
+ .map(([title,a,b])=>({id:uid(),title,owner:'',start:iso(a),end:iso(b),status:'todo',note:''}));
+ const B=[['Arduino Nano',1],['Micro servo SG90',4],['Barra de pinos fêmea 40 pinos',1],['Barra de pinos macho 180° (longos)',1],['Barra de pinos macho 90°',1],['Borne KRE 3 vias (5 mm)',1],['Placa de fenolite 100×100 mm',1],['Percloreto de ferro',1],['Fonte de alimentação',1],['Parafusos, porcas e arruelas M3',1],['Solda e consumíveis',1]]
+ .map(([item,qty])=>({id:uid(),item,qty,est:0,real:0,by:''}));
+ const D=['Grupo “PBL IV” no AVA com todos os integrantes','TDE 2: arquivo com as 10 fotos das etapas da PCI','Sketch .ino com nomes completos nas primeiras linhas','Vídeo no YouTube com todos os integrantes'].map(title=>({id:uid(),title,due:'',owner:'',done:false}));
+ return{members:m,tasks:T,budget:B,deliv:D};
+}
+function load(){try{const x=localStorage.getItem(KEY);if(x)return JSON.parse(x)}catch(e){}return seed()}
+function save(){
+ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+ ver++;clearTimeout(tm);if(ready()&&code){dirty=true;tm=setTimeout(push,500)}
+}
+function commit(){save();render()}
+const mname=id=>(S.members.find(m=>m.id===id)||{}).name||'Sem responsável';
+const sel=(id,val,none)=>`<select id="${id}"><option value="">${none||'Sem responsável'}</option>${S.members.map(m=>`<option value="${m.id}" ${m.id===val?'selected':''}>${esc(m.name)}</option>`).join('')}</select>`;
+const selI=(cb,val)=>`<select onchange="${cb}(this.value)"><option value="">—</option>${S.members.map(m=>`<option value="${m.id}" ${m.id===val?'selected':''}>${esc(m.name)}</option>`).join('')}</select>`;
+
+/* Kanban */
+function kanban(){
+ return `<div class="board">${ST.map(([k,l])=>{const c=S.tasks.filter(t=>t.status===k);
+  return `<section class="col" ondragover="event.preventDefault()" ondrop="drop(event,'${k}')"><h3><i class="dot ${k}"></i>${l}<b>${c.length}</b></h3>${c.map(card).join('')}</section>`}).join('')}</div><button class="btn" onclick="editTask()">+ Nova tarefa</button>`;
+}
+const card=t=>`<article class="card" draggable="true" ondragstart="event.dataTransfer.setData('text',this.dataset.id)" data-id="${t.id}" onclick="editTask('${t.id}')"><strong>${esc(t.title)}</strong><small>${fmt(t.start)} → ${fmt(t.end)}</small><span class="chip">${esc(mname(t.owner))}</span></article>`;
+function drop(e,k){e.preventDefault();const t=S.tasks.find(x=>x.id===e.dataTransfer.getData('text'));if(t&&t.status!==k){t.status=k;commit()}}
+function editTask(id){
+ const t=S.tasks.find(x=>x.id===id)||{id:'',title:'',owner:'',start:iso(0),end:iso(1),status:'todo',note:''};
+ dlg.innerHTML=`<form method="dialog" onsubmit="return saveTask('${t.id}')"><label>Título<input id="f_t" value="${esc(t.title)}" required></label><label>Responsável${sel('f_o',t.owner)}</label>
+ <div class="row"><label>Início<input type="date" id="f_s" value="${t.start}" required></label><label>Fim<input type="date" id="f_e" value="${t.end}" required></label></div>
+ <label>Status<select id="f_st">${ST.map(([k,l])=>`<option value="${k}" ${k===t.status?'selected':''}>${l}</option>`).join('')}</select></label>
+ <label>Notas<textarea id="f_n" rows="3">${esc(t.note)}</textarea></label>
+ <div class="row"><button class="btn">Salvar</button>${t.id?`<button type="button" class="btn ghost" onclick="delTask('${t.id}')">Excluir</button>`:''}<button type="button" class="btn ghost" onclick="dlg.close()">Cancelar</button></div></form>`;
+ dlg.showModal();
+}
+function saveTask(id){
+ let t=S.tasks.find(x=>x.id===id);if(!t){t={id:uid()};S.tasks.push(t)}
+ let s=$('#f_s').value,e=$('#f_e').value;if(e<s)[s,e]=[e,s];
+ Object.assign(t,{title:$('#f_t').value.trim(),owner:$('#f_o').value,start:s,end:e,status:$('#f_st').value,note:$('#f_n').value});
+ dlg.close();commit();return false;
+}
+function delTask(id){S.tasks=S.tasks.filter(t=>t.id!==id);dlg.close();commit()}
+
+/* Gantt */
+function gantt(){
+ const T=S.tasks.filter(t=>t.start&&t.end).sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0);
+ if(!T.length)return '<p class="mu">Nenhuma tarefa com datas.</p>';
+ const today=dn(iso(0)),a=Math.min(...T.map(t=>dn(t.start)),today),z=Math.max(...T.map(t=>dn(t.end)),today),W=30,n=z-a+1;
+ let h='';
+ for(let i=0;i<n;i++){const d=new Date((a+i)*864e5),D=d.getUTCDate();
+  h+=`<div class="gd${[0,6].includes(d.getUTCDay())?' we':''}" style="left:${i*W}px;width:${W}px">${D}${D===1||i===0?`<em>${MES[d.getUTCMonth()]}</em>`:''}</div>`}
+ const rows=T.map(t=>{const l=(dn(t.start)-a)*W,w=(dn(t.end)-dn(t.start)+1)*W;
+  return `<div class="gr"><div class="gl" onclick="editTask('${t.id}')">${esc(t.title)}<small>${esc(mname(t.owner))}</small></div><div class="gt" style="width:${n*W}px"><div class="bar ${t.status}" style="left:${l}px;width:${w}px" title="${fmt(t.start)} → ${fmt(t.end)}" onclick="editTask('${t.id}')"></div></div></div>`}).join('');
+ return `<p class="mu">Clique numa barra para editar. A linha vermelha marca hoje.</p><div class="gantt"><div class="gw" style="width:${180+n*W}px"><div class="gr"><div class="gl"></div><div class="gt gh" style="width:${n*W}px">${h}</div></div>${rows}<div class="today" style="left:${180+(today-a)*W+W/2}px"></div></div></div>
+ <p class="mu">${ST.map(([k,l])=>`<i class="dot ${k}"></i> ${l}`).join(' &nbsp; ')}</p>`;
+}
+
+/* Orçamento */
+function budget(){
+ const sum=k=>S.budget.reduce((s,b)=>s+(+b[k]||0),0),e=sum('est'),r=sum('real'),n=S.members.length||1;
+ return `<div class="grid"><div class="box"><small>Estimado</small><h2>${brl(e)}</h2></div><div class="box"><small>Gasto real</small><h2>${brl(r)}</h2></div><div class="box"><small>Diferença</small><h2>${brl(r-e)}</h2></div><div class="box"><small>Real por integrante</small><h2>${brl(r/n)}</h2></div></div>
+ <div class="tw"><table><tr><th>Item<th>Qtd<th>Estimado (R$)<th>Real (R$)<th>Comprado por<th></tr>${S.budget.map(b=>`<tr><td><input value="${esc(b.item)}" onchange="bset('${b.id}','item',this.value)"><td><input class="n" type="number" min="0" value="${b.qty}" onchange="bset('${b.id}','qty',this.value)"><td><input class="n" type="number" min="0" step="0.01" value="${b.est}" onchange="bset('${b.id}','est',this.value)"><td><input class="n" type="number" min="0" step="0.01" value="${b.real}" onchange="bset('${b.id}','real',this.value)"><td><select onchange="bset('${b.id}','by',this.value)"><option value="">—</option>${S.members.map(m=>`<option value="${m.id}" ${m.id===b.by?'selected':''}>${esc(m.name)}</option>`).join('')}</select><td><button class="btn ghost" onclick="bdel('${b.id}')">✕</button></tr>`).join('')}</table></div><p><button class="btn" onclick="badd()">+ Novo item</button></p>`;
+}
+function bset(id,k,v){const b=S.budget.find(x=>x.id===id);b[k]=(k==='item'||k==='by')?v:(+v||0);commit()}
+function badd(){S.budget.push({id:uid(),item:'Novo item',qty:1,est:0,real:0,by:''});commit()}
+function bdel(id){S.budget=S.budget.filter(b=>b.id!==id);commit()}
+
+/* Entregas */
+function deliv(){
+ const d=S.deliv.filter(x=>x.done).length,p=S.deliv.length?Math.round(100*d/S.deliv.length):0;
+ return `<p><strong>${d} de ${S.deliv.length}</strong> entregas concluídas</p><div class="prog"><i style="width:${p}%"></i></div>
+ <div class="tw"><table><tr><th>Feito<th>Entrega<th>Prazo<th>Responsável<th></tr>${S.deliv.map(x=>`<tr><td><input type="checkbox" ${x.done?'checked':''} onchange="dset('${x.id}','done',this.checked)"><td><input value="${esc(x.title)}" onchange="dset('${x.id}','title',this.value)"><td><input type="date" value="${x.due}" onchange="dset('${x.id}','due',this.value)"><td><select onchange="dset('${x.id}','owner',this.value)"><option value="">—</option>${S.members.map(m=>`<option value="${m.id}" ${m.id===x.owner?'selected':''}>${esc(m.name)}</option>`).join('')}</select><td><button class="btn ghost" onclick="ddel('${x.id}')">✕</button></tr>`).join('')}</table></div><p><button class="btn" onclick="dadd()">+ Nova entrega</button></p>`;
+}
+function dset(id,k,v){S.deliv.find(x=>x.id===id)[k]=v;commit()}
+function dadd(){S.deliv.push({id:uid(),title:'Nova entrega',due:'',owner:'',done:false});commit()}
+function ddel(id){S.deliv=S.deliv.filter(x=>x.id!==id);commit()}
+
+/* Equipe */
+function team(){
+ return `<div class="grid">${S.members.map(m=>{const t=S.tasks.filter(x=>x.owner===m.id),dn_=t.filter(x=>x.status==='done').length,g=S.budget.filter(b=>b.by===m.id).reduce((s,b)=>s+(+b.real||0),0);
+  return `<div class="box"><input value="${esc(m.name)}" onchange="mren('${m.id}',this.value)" style="width:100%;font:inherit;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:6px"><p>Tarefas: <strong>${t.length}</strong> (${dn_} concluídas)<br>Já gastou: <strong>${brl(g)}</strong></p>${S.members.length>1?`<button class="btn ghost" onclick="mdel('${m.id}')">Remover</button>`:''}</div>`}).join('')}</div>
+ <button class="btn" onclick="madd()" ${S.members.length>=3?'disabled':''}>+ Integrante</button> <small>Equipes de até 3 alunos.</small>`;
+}
+function mren(id,v){S.members.find(m=>m.id===id).name=v||'Sem nome';commit()}
+function madd(){S.members.push({id:uid(),name:'Integrante '+(S.members.length+1)});commit()}
+function mdel(id){S.members=S.members.filter(m=>m.id!==id);for(const l of [S.tasks,S.deliv])l.forEach(x=>{if(x.owner===id)x.owner=''});S.budget.forEach(b=>{if(b.by===id)b.by=''});commit()}
+
+const TABS=[['kanban','Kanban',kanban],['gantt','Cronograma',gantt],['budget','Orçamento',budget],['deliv','Entregas',deliv],['team','Equipe',team]];
+function render(){
+ $('#tabs').innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render()">${l}</button>`).join('');
+ $('#app').innerHTML=TABS.find(t=>t[0]===tab)[2]();
+}
+const ready=()=>/^https:\/\//.test(CFG.url)&&CFG.key.length>20;
+let code='',dirty=false,ver=0;
+const setSync=m=>{$('#sync').textContent=m};
+async function rpc(fn,body){
+ const r=await fetch(CFG.url.replace(/\/$/,'')+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:CFG.key,Authorization:'Bearer '+CFG.key},body:JSON.stringify(body)});
+ if(!r.ok)throw new Error(r.status);
+ const t=await r.text();return t?JSON.parse(t):null;
+}
+function push(){
+ if(!ready()||!code)return;
+ const v=ver;
+ rpc('set_state',{p_code:code,p_data:{json:JSON.stringify(S)}}).then(()=>{if(v===ver)dirty=false;setSync('Sincronizado com a equipe')}).catch(()=>setSync('Sem conexão: salvo só neste navegador'));
+}
+async function pull(){
+ if(!ready()||!code)return;
+ if(dirty){push();return}
+ try{
+  const r=await rpc('get_state',{p_code:code});
+  if(!r||!r.json){push();return}
+  setSync('Sincronizado com a equipe');
+  if(r.json===JSON.stringify(S))return;
+  const a=document.activeElement;
+  if(dlg.open||(a&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)))return;
+  S=JSON.parse(r.json);try{localStorage.setItem(KEY,r.json)}catch(e){}render();
+ }catch(e){setSync('Sem conexão: salvo só neste navegador')}
+}
+function initCode(){
+ try{code=decodeURIComponent(location.hash.slice(1))||localStorage.getItem('pbl4-code')||''}catch(e){code=''}
+ if(ready()&&code.length<8)code=(prompt('Código do projeto (mínimo 8 caracteres). Toda a equipe usa o mesmo código:')||'').trim();
+ if(code.length>=8){try{localStorage.setItem('pbl4-code',code)}catch(e){}history.replaceState(null,'','#'+encodeURIComponent(code))}else code='';
+}
+S=load();render();
+initCode();
+setSync(!ready()?'Modo local: configure o Supabase para sincronizar':code?'Conectando…':'Sem código do projeto: salvo só neste navegador');
+pull();setInterval(pull,4000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+</script>
+</body>
+</html>
